@@ -217,12 +217,20 @@
             
             updateDebug(`Creating mole at position ${pos}`);
             
-            // Create mole
-            const mole = document.createElement('a-box');
-            mole.setAttribute('width', '0.3');
-            mole.setAttribute('height', '0.3');
-            mole.setAttribute('depth', '0.3');
-            mole.setAttribute('color', '#8B4513');
+            // Create mole (mix of boxes and spheres)
+            const moleTypes = ['a-box', 'a-sphere'];
+            const moleType = moleTypes[Math.floor(Math.random() * moleTypes.length)];
+            const mole = document.createElement(moleType);
+            
+            if (moleType === 'a-box') {
+                mole.setAttribute('width', '0.3');
+                mole.setAttribute('height', '0.3');
+                mole.setAttribute('depth', '0.3');
+                mole.setAttribute('color', '#8B4513');
+            } else {
+                mole.setAttribute('radius', '0.2');
+                mole.setAttribute('color', '#654321');
+            }
             
             // Add to scene
             entity.appendChild(mole);
@@ -230,24 +238,31 @@
             // Start underground
             mole.object3D.position.set(0, -0.5, 0);
             
+            // Track if mole was hit
+            let moleHit = false;
+            
             // Pop up animation
             animateMoleUp(mole);
             
             // Click handler
             mole.addEventListener('click', function() {
-                if (gameActive) {
+                if (gameActive && !moleHit) {
+                    moleHit = true;
                     score += 10;
                     updateUI();
                     updateDebug("Mole hit! +10 points");
                     mole.setAttribute('color', '#ff0000');
-                    setTimeout(() => removeMole(mole), 200);
+                    
+                    // Quick fall down when hit
+                    setTimeout(() => animateMoleDown(mole), 200);
                 }
             });
             
-            // Auto hide after 3 seconds
+            // Auto fall down after 3 seconds if not hit
             setTimeout(() => {
-                if (mole.parentNode) {
-                    removeMole(mole);
+                if (mole.parentNode && !moleHit) {
+                    updateDebug("Mole falling back down...");
+                    animateMoleDown(mole);
                 }
             }, 3000);
         }
@@ -260,7 +275,9 @@
                 const elapsed = Date.now() - startTime;
                 const progress = Math.min(elapsed / duration, 1);
                 
-                const y = -0.5 + (1.0 * progress);
+                // Ease out for smooth pop-up
+                const easeProgress = 1 - Math.pow(1 - progress, 3);
+                const y = -0.5 + (1.0 * easeProgress);
                 mole.object3D.position.y = y;
                 
                 if (progress < 1) {
@@ -271,9 +288,37 @@
             animate();
         }
 
+        function animateMoleDown(mole) {
+            if (!mole || !mole.parentNode) return;
+            
+            const startTime = Date.now();
+            const duration = 400;
+            const startY = mole.object3D.position.y;
+            
+            function animate() {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                
+                // Ease in for smooth fall down
+                const easeProgress = progress * progress;
+                const y = startY + (-0.5 - startY) * easeProgress;
+                mole.object3D.position.y = y;
+                
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    // Remove mole after it falls underground
+                    removeMole(mole);
+                }
+            }
+            
+            animate();
+        }
+
         function removeMole(mole) {
             if (mole && mole.parentNode) {
                 mole.parentNode.removeChild(mole);
+                updateDebug("Mole removed from scene");
             }
         }
 
