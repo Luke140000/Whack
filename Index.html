@@ -21,11 +21,11 @@
     <div id="ui">
         <div>Score: <span id="score">0</span></div>
         <div>Time: <span id="timer">30</span>s</div>
-        <div>Debug: <span id="debug">Starting...</span></div>
+        <div>Debug: <span id="debug">Waiting for you to click the green button...</span></div>
     </div>
 
     <a-scene background="color: #87CEEB">
-        <!-- Camera with cursor for interaction -->
+        <!-- Camera with cursor -->
         <a-camera>
             <a-cursor 
                 position="0 0 -1"
@@ -43,6 +43,37 @@
             height="10" 
             color="#4CC417">
         </a-plane>
+
+        <!-- Start Button -->
+        <a-box 
+            id="start-button"
+            position="0 1.5 -4" 
+            width="2" 
+            height="0.8" 
+            depth="0.2" 
+            color="#00ff00">
+        </a-box>
+        
+        <!-- Start Button Text -->
+        <a-text 
+            id="start-text"
+            position="0 1.5 -3.9" 
+            value="CLICK TO START!" 
+            align="center" 
+            color="black" 
+            width="8"
+            font="roboto">
+        </a-text>
+
+        <!-- Game Title -->
+        <a-text 
+            position="0 2.5 -4" 
+            value="VR WHACK-A-MOLE" 
+            align="center" 
+            color="white" 
+            width="10"
+            font="roboto">
+        </a-text>
 
         <!-- Mole positions -->
         <a-entity id="mole-1" position="-2 0 -3"></a-entity>
@@ -72,9 +103,12 @@
     </a-scene>
 
     <script>
+        // GAME VARIABLES - ALL START AS FALSE/INACTIVE
+        let gameStarted = false;
+        let gameActive = false;
         let score = 0;
         let timeLeft = 30;
-        let gameActive = false;
+        let gameTimer = null;
 
         const scoreElement = document.getElementById('score');
         const timerElement = document.getElementById('timer');
@@ -85,38 +119,85 @@
             console.log("DEBUG: " + message);
         }
 
-        function startGame() {
-            updateDebug("Starting game...");
-            gameActive = true;
+        // WAIT FOR SCENE TO LOAD, THEN SET UP BUTTON CLICK
+        document.querySelector('a-scene').addEventListener('loaded', function() {
+            updateDebug("Scene loaded. Click the green button to start!");
+            
+            const startButton = document.getElementById('start-button');
+            const startText = document.getElementById('start-text');
+            
+            // ADD CLICK EVENT LISTENER TO START BUTTON
+            startButton.addEventListener('click', function() {
+                updateDebug("GREEN BUTTON CLICKED!");
+                
+                // ONLY START IF GAME HASN'T STARTED YET
+                if (!gameStarted) {
+                    updateDebug("Starting game now...");
+                    
+                    // HIDE THE BUTTON AND TEXT
+                    startButton.setAttribute('visible', 'false');
+                    startText.setAttribute('visible', 'false');
+                    
+                    // SET GAME STATE TO STARTED
+                    gameStarted = true;
+                    gameActive = true;
+                    
+                    // ACTUALLY START THE GAME
+                    startTheGame();
+                }
+            });
+        });
+
+        // THIS FUNCTION ONLY RUNS AFTER BUTTON CLICK
+        function startTheGame() {
+            updateDebug("Game is starting!");
+            
+            // Reset game variables
             score = 0;
             timeLeft = 30;
             updateUI();
             
-            const gameTimer = setInterval(() => {
+            // Start the countdown timer
+            gameTimer = setInterval(function() {
                 timeLeft--;
                 updateUI();
+                updateDebug(`Time left: ${timeLeft}`);
+                
                 if (timeLeft <= 0) {
-                    gameActive = false;
-                    clearInterval(gameTimer);
-                    alert(`Game Over! Score: ${score}`);
+                    endGame();
                 }
             }, 1000);
             
-            spawnMoles();
+            // Start spawning moles
+            updateDebug("Starting mole spawning...");
+            spawnNextMole();
         }
 
-        function spawnMoles() {
-            if (!gameActive) return;
+        // MOLE SPAWNING - ONLY RUNS IF GAME IS ACTIVE
+        function spawnNextMole() {
+            // CHECK IF GAME IS STILL ACTIVE
+            if (!gameActive || !gameStarted) {
+                updateDebug("Mole spawning stopped - game not active");
+                return;
+            }
             
-            updateDebug("Spawning mole...");
+            updateDebug("Creating a mole...");
             createMole();
             
-            setTimeout(() => {
-                if (gameActive) spawnMoles();
+            // SCHEDULE NEXT MOLE SPAWN
+            setTimeout(function() {
+                if (gameActive && gameStarted) {
+                    spawnNextMole();
+                }
             }, 2000);
         }
 
         function createMole() {
+            // DOUBLE CHECK GAME IS ACTIVE
+            if (!gameActive || !gameStarted) {
+                return;
+            }
+            
             // Find available positions
             const available = [];
             for (let i = 1; i <= 9; i++) {
@@ -141,89 +222,59 @@
             mole.setAttribute('width', '0.3');
             mole.setAttribute('height', '0.3');
             mole.setAttribute('depth', '0.3');
-            mole.setAttribute('color', 'red');
+            mole.setAttribute('color', '#8B4513');
             
-            // Start underground and pop up
+            // Add to scene
             entity.appendChild(mole);
             
-            // Set initial position underground
+            // Start underground
             mole.object3D.position.set(0, -0.5, 0);
             
-            updateDebug("Mole created, starting animation...");
+            // Pop up animation
+            animateMoleUp(mole);
             
-            // Animate up
-            const startY = -0.5;
-            const endY = 0.5;
-            const duration = 500;
-            const startTime = Date.now();
-            
-            function animateUp() {
-                const elapsed = Date.now() - startTime;
-                const progress = Math.min(elapsed / duration, 1);
-                
-                // Simple easing
-                const easeProgress = 1 - Math.pow(1 - progress, 3);
-                const currentY = startY + (endY - startY) * easeProgress;
-                
-                mole.object3D.position.y = currentY;
-                
-                if (progress < 1) {
-                    requestAnimationFrame(animateUp);
-                } else {
-                    updateDebug("Pop-up animation complete");
+            // Click handler
+            mole.addEventListener('click', function() {
+                if (gameActive) {
+                    score += 10;
+                    updateUI();
+                    updateDebug("Mole hit! +10 points");
+                    mole.setAttribute('color', '#ff0000');
+                    setTimeout(() => removeMole(mole), 200);
                 }
-            }
-            
-            animateUp();
-            
-            // Add click handler
-            mole.addEventListener('click', () => {
-                if (!gameActive) return;
-                score += 10;
-                updateUI();
-                updateDebug("Mole hit!");
-                mole.setAttribute('color', 'green');
-                setTimeout(() => hideMole(mole), 200);
             });
             
             // Auto hide after 3 seconds
             setTimeout(() => {
                 if (mole.parentNode) {
-                    hideMole(mole);
+                    removeMole(mole);
                 }
             }, 3000);
         }
 
-        function hideMole(mole) {
-            if (!mole || !mole.parentNode) return;
-            
-            updateDebug("Hiding mole...");
-            
-            // Animate down
-            const startY = mole.object3D.position.y;
-            const endY = -0.5;
-            const duration = 400;
+        function animateMoleUp(mole) {
             const startTime = Date.now();
+            const duration = 500;
             
-            function animateDown() {
+            function animate() {
                 const elapsed = Date.now() - startTime;
                 const progress = Math.min(elapsed / duration, 1);
                 
-                const currentY = startY + (endY - startY) * progress;
-                mole.object3D.position.y = currentY;
+                const y = -0.5 + (1.0 * progress);
+                mole.object3D.position.y = y;
                 
                 if (progress < 1) {
-                    requestAnimationFrame(animateDown);
-                } else {
-                    // Remove mole
-                    if (mole.parentNode) {
-                        mole.parentNode.removeChild(mole);
-                    }
-                    updateDebug("Mole removed");
+                    requestAnimationFrame(animate);
                 }
             }
             
-            animateDown();
+            animate();
+        }
+
+        function removeMole(mole) {
+            if (mole && mole.parentNode) {
+                mole.parentNode.removeChild(mole);
+            }
         }
 
         function updateUI() {
@@ -231,11 +282,29 @@
             timerElement.textContent = timeLeft;
         }
 
-        // Start game
-        window.addEventListener('load', () => {
-            updateDebug("Page loaded, starting in 2 seconds...");
-            setTimeout(startGame, 2000);
-        });
+        function endGame() {
+            updateDebug("Game Over!");
+            gameActive = false;
+            
+            if (gameTimer) {
+                clearInterval(gameTimer);
+                gameTimer = null;
+            }
+            
+            alert(`Game Over! Final Score: ${score}`);
+            
+            // Reset for new game
+            setTimeout(() => {
+                gameStarted = false;
+                document.getElementById('start-button').setAttribute('visible', 'true');
+                document.getElementById('start-text').setAttribute('visible', 'true');
+                document.getElementById('start-text').setAttribute('value', 'PLAY AGAIN?');
+                updateDebug("Click to play again!");
+            }, 2000);
+        }
+
+        // NO OTHER CODE RUNS AUTOMATICALLY
+        updateDebug("Page loaded. Waiting for scene to load...");
     </script>
 </body>
 </html>
