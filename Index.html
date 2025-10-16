@@ -48,8 +48,8 @@
         <a-box 
             id="start-button"
             position="0 1.5 -4" 
-            width="2" 
-            height="0.8" 
+            width="2.5" 
+            height="0.7" 
             depth="0.2" 
             color="#00ff00">
         </a-box>
@@ -58,17 +58,17 @@
         <a-text 
             id="start-text"
             position="0 1.5 -3.9" 
-            value="CLICK TO START!" 
+            value="GAME STARTING!" 
             align="center" 
-            color="black" 
-            width="8"
+            color="white" 
+            width="6"
             font="roboto">
         </a-text>
 
         <!-- Game Title -->
         <a-text 
             position="0 2.5 -4" 
-            value="VR WHACK-A-MOLE" 
+            value="WHACK-A-MOLE" 
             align="center" 
             color="white" 
             width="10"
@@ -87,15 +87,15 @@
         <a-entity id="mole-9" position="2 0 -5"></a-entity>
 
         <!-- Holes -->
-        <a-circle position="-2 0.01 -3" rotation="-90 0 0" radius="0.3" color="#654321"></a-circle>
+        <a-circle position="-2 0.01 -3" rotation="-90 0 0" radius="0.3" color="#000000"></a-circle>
         <a-circle position="0 0.01 -3" rotation="-90 0 0" radius="0.3" color="#654321"></a-circle>
-        <a-circle position="2 0.01 -3" rotation="-90 0 0" radius="0.3" color="#654321"></a-circle>
+        <a-circle position="2 0.01 -3" rotation="-90 0 0" radius="0.3" color="#000000"></a-circle>
         <a-circle position="-2 0.01 -4" rotation="-90 0 0" radius="0.3" color="#654321"></a-circle>
-        <a-circle position="0 0.01 -4" rotation="-90 0 0" radius="0.3" color="#654321"></a-circle>
+        <a-circle position="0 0.01 -4" rotation="-90 0 0" radius="0.3" color="#000000"></a-circle>
         <a-circle position="2 0.01 -4" rotation="-90 0 0" radius="0.3" color="#654321"></a-circle>
-        <a-circle position="-2 0.01 -5" rotation="-90 0 0" radius="0.3" color="#654321"></a-circle>
+        <a-circle position="-2 0.01 -5" rotation="-90 0 0" radius="0.3" color="#000000"></a-circle>
         <a-circle position="0 0.01 -5" rotation="-90 0 0" radius="0.3" color="#654321"></a-circle>
-        <a-circle position="2 0.01 -5" rotation="-90 0 0" radius="0.3" color="#654321"></a-circle>
+        <a-circle position="2 0.01 -5" rotation="-90 0 0" radius="0.3" color="#000000"></a-circle>
 
         <!-- Lighting -->
         <a-light type="ambient" color="#404040"></a-light>
@@ -224,12 +224,12 @@
             
             if (moleType === 'a-box') {
                 mole.setAttribute('width', '0.3');
-                mole.setAttribute('height', '0.3');
+                mole.setAttribute('height', '0.4');
                 mole.setAttribute('depth', '0.3');
                 mole.setAttribute('color', '#8B4513');
             } else {
-                mole.setAttribute('radius', '0.2');
-                mole.setAttribute('color', '#654321');
+                mole.setAttribute('radius', '0.3');
+                mole.setAttribute('color', '#40301b');
             }
             
             // Add to scene
@@ -261,7 +261,7 @@
             // Auto fall down after 3 seconds if not hit
             setTimeout(() => {
                 if (mole.parentNode && !moleHit) {
-                    updateDebug("Mole falling back down...");
+                    updateDebug("Mole falling down...");
                     animateMoleDown(mole);
                 }
             }, 3000);
